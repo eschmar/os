@@ -1,4 +1,5 @@
 global start
+extern long_mode_start
 
 section .text
 bits 32
@@ -14,9 +15,16 @@ start:
     call set_up_page_tables
     call enable_paging
 
+    ; load the 64-bit GDT
+    lgdt [gdt64.pointer]
+
+    jmp gdt64.code:long_mode_start
+
+    ; 32bit section
+    ;
+    ;
     ; print `OK` to screen
     mov dword [0xb8000], 0x2f4b2f4f
-    ;mov dword [0xb8000], 0x2f572f452f50
     hlt
 
 ; Prints `ERR: ` and the given error code to screen and hangs.
@@ -96,12 +104,7 @@ check_long_mode:
     jmp error
 
 
-
-
-
-
-
-
+; Paging init
 set_up_page_tables:
     ; map first P4 entry to P3 table
     mov eax, p3_table
@@ -127,9 +130,7 @@ set_up_page_tables:
     jne .map_p2_table  ; else map the next entry
 
 
-
-
-
+; Paging
 enable_paging:
     ; load P4 to cr3 register (cpu uses this to access the P4 table)
     mov eax, p4_table
@@ -154,10 +155,7 @@ enable_paging:
     ret
 
 
-
-
-
-
+; stack
 section .bss
 align 4096
 p4_table:
@@ -169,3 +167,14 @@ p2_table:
 stack_bottom:
     resb 64
 stack_top:
+
+
+; Global descriptor table
+section .rodata
+gdt64:
+    dq 0 ; zero entry
+.code: equ $ - gdt64 ; new
+    dq (1<<43) | (1<<44) | (1<<47) | (1<<53) ; code segment
+.pointer:
+    dw $ - gdt64 - 1
+    dq gdt64
