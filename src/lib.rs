@@ -1,9 +1,11 @@
 #![feature(lang_items)]
 #![feature(const_fn)]
-#![feature(unique)]
 #![feature(const_unique_new)]
+#![feature(unique)]
 #![no_std]
+
 extern crate rlibc;
+extern crate volatile;
 
 #[macro_use]
 mod vga_buffer;
