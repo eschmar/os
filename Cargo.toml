@@ -5,3 +5,6 @@ authors = ["Marcel Eschmann <spam@eschmann.io>"]
 
 [lib]
 crate-type = ["staticlib"]
+
+[dependencies]
+rlibc = "1.0"
