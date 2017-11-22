@@ -14,7 +14,7 @@ mod vga_buffer;
 pub extern fn rust_main() {
     // ATTENTION: we have a very small stack and no guard page
 
-    vga_buffer::print_something;
+    vga_buffer::print_something();
     loop{}
 }
 
