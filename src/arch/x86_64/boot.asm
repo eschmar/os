@@ -128,7 +128,7 @@ set_up_page_tables:
     inc ecx            ; increase counter
     cmp ecx, 512       ; if counter == 512, the whole P2 table is mapped
     jne .map_p2_table  ; else map the next entry
-
+    ret
 
 ; Paging
 enable_paging:
@@ -174,7 +174,8 @@ section .rodata
 gdt64:
     dq 0 ; zero entry
 .code: equ $ - gdt64 ; new
-    dq (1<<43) | (1<<44) | (1<<47) | (1<<53) ; code segment
+    ;dq (1<<43) | (1<<44) | (1<<47) | (1<<53) ; code segment
+    dq (1<<44) | (1<<47) | (1<<43) | (1<<53) ; code segment
 .pointer:
     dw $ - gdt64 - 1
     dq gdt64
