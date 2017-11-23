@@ -11,12 +11,18 @@ extern crate spin;
 #[macro_use]
 mod vga_buffer;
 
+mod fib;
+
 #[no_mangle]
 pub extern fn rust_main() {
     // ATTENTION: we have a very small stack and no guard page
     vga_buffer::clear_screen();
-    println!("Hello World{}", "!");
-    println!("{}", { println!("inner"); "outer" });
+    //println!("Hello World{}", "!");
+    //println!("{}", { println!("inner"); "outer" });
+    let n = 12;
+    let z = fib::fib(n);
+    println!("Fibonacci of {} is {} \n", n, z);
+
     loop{}
 }
 
