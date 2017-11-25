@@ -11,11 +11,12 @@ extern crate multiboot2;
 
 #[macro_use]
 mod vga_buffer;
-
 mod fib;
+mod memory;
 
 #[no_mangle]
 pub extern fn rust_main(multiboot_information_address: usize) {
+    use memory::FrameAllocator;
     // ATTENTION: we have a very small stack and no guard page
     vga_buffer::clear_screen();
     //println!("Hello World{}", "!");
@@ -55,10 +56,23 @@ pub extern fn rust_main(multiboot_information_address: usize) {
         .max().unwrap();
 
     // Calculate multiboot information structure boundaries
-    let kernel_start = elf_sections_tag.sections().map(|s| s.addr)
-        .min().unwrap();
-    let kernel_end = elf_sections_tag.sections().map(|s| s.addr + s.size)
-        .max().unwrap();
+    let multiboot_start = multiboot_information_address;
+    let multiboot_end = multiboot_start + (boot_info.total_size as usize);
+
+    // test allocator
+
+    let mut frame_allocator = memory::AreaFrameAllocator::new(
+        kernel_start as usize, kernel_end as usize, multiboot_start,
+        multiboot_end, memory_map_tag.memory_areas());
+
+    println!("{:?}", frame_allocator.allocate_frame());
+
+    // for i in 0.. {
+    //     if let None = frame_allocator.allocate_frame() {
+    //         println!("allocated {} frames", i);
+    //         break;
+    //     }
+    // }
 
     loop{}
 }
