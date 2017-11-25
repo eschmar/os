@@ -24,6 +24,8 @@ pub extern fn rust_main(multiboot_information_address: usize) {
     // let z = fib::fib(n);
     // println!("Fibonacci of {} is {} \n", n, z);
 
+    // Available memory areas
+
     let boot_info = unsafe{ multiboot2::load(multiboot_information_address) };
     let memory_map_tag = boot_info.memory_map_tag()
         .expect("Memory map tag required");
@@ -34,8 +36,40 @@ pub extern fn rust_main(multiboot_information_address: usize) {
             area.base_addr, area.length);
     }
 
+    // Kernel ELF Sections
+
+    let elf_sections_tag = boot_info.elf_sections_tag()
+        .expect("Elf-sections tag required");
+
+    println!("kernel sections:");
+    for section in elf_sections_tag.sections() {
+        println!("    addr: 0x{:x}, size: 0x{:x}, flags: 0x{:x}",
+            section.addr, section.size, section.flags);
+    }
+
+    // Calculate kernel space boundaries
+
+    let kernel_start = elf_sections_tag.sections().map(|s| s.addr)
+        .min().unwrap();
+    let kernel_end = elf_sections_tag.sections().map(|s| s.addr + s.size)
+        .max().unwrap();
+
+    // Calculate multiboot information structure boundaries
+    let kernel_start = elf_sections_tag.sections().map(|s| s.addr)
+        .min().unwrap();
+    let kernel_end = elf_sections_tag.sections().map(|s| s.addr + s.size)
+        .max().unwrap();
+
     loop{}
 }
 
 #[lang = "eh_personality"] extern fn eh_personality() {}
-#[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
+
+#[lang = "panic_fmt"]
+#[no_mangle]
+pub extern fn panic_fmt(fmt: core::fmt::Arguments, file: &'static str, line: u32) -> !
+{
+    println!("\n\nPANIC in {} at line {}:", file, line);
+    println!("    {}", fmt);
+    loop{}
+}
