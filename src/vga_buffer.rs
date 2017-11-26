@@ -123,7 +123,7 @@ impl fmt::Write for Writer {
 
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
     column_position: 0,
-    color_code: ColorCode::new(Color::LightCyan, Color::Black),
+    color_code: ColorCode::new(Color::Magenta, Color::Black),
     buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
 });
 
