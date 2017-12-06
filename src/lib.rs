@@ -52,7 +52,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         kernel_start as usize, kernel_end as usize, multiboot_start,
         multiboot_end, memory_map_tag.memory_areas());
 
-    // this is the new part
+    enable_nxe_bit();
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
 
     frame_allocator.allocate_frame();
@@ -60,6 +60,16 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     println!("It did not crash!");
 
     loop {}
+}
+
+fn enable_nxe_bit() {
+    use x86_64::registers::msr::{IA32_EFER, rdmsr, wrmsr};
+
+    let nxe_bit = 1 << 11;
+    unsafe {
+        let efer = rdmsr(IA32_EFER);
+        wrmsr(IA32_EFER, efer | nxe_bit);
+    }
 }
 
 #[lang = "eh_personality"] extern fn eh_personality() {}
