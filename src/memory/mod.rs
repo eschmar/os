@@ -17,11 +17,13 @@ impl Frame {
         Frame{ number: address / PAGE_SIZE }
     }
 
-
-
 	fn start_address(&self) -> PhysicalAddress {
 	    self.number * PAGE_SIZE
 	}
+
+    fn clone(&self) -> Frame {
+        Frame { number: self.number }
+    }
 }
 
 pub trait FrameAllocator {

@@ -5,14 +5,16 @@ use self::table::{Table, Level4};
 
 mod entry;
 mod table;
+mod temporary_page;
 
 const ENTRY_COUNT: usize = 512;
 
 pub type PhysicalAddress = usize;
 pub type VirtualAddress = usize;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Page {
-   number: usize,
+    number: usize,
 }
 
 impl Page {
@@ -179,4 +181,15 @@ pub fn test_paging<A>(allocator: &mut A)
 
 	page_table.unmap(Page::containing_address(addr), allocator);
 	println!("None = {:?}", page_table.translate(addr));
+}
+
+pub struct InactivePageTable {
+    p4_frame: Frame,
+}
+
+impl InactivePageTable {
+    pub fn new(frame: Frame) -> InactivePageTable {
+        // TODO zero and recursive map the frame
+        InactivePageTable { p4_frame: frame }
+    }
 }
