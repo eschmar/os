@@ -1,9 +1,11 @@
 pub use self::entry::*;
+pub use self::mapper::Mapper;
+use core::ops::{Deref, DerefMut};
 use core::ptr::Unique;
+use memory::{PAGE_SIZE, Frame, FrameAllocator};
+use multiboot2::BootInformation;
 use self::table::{Table, Level4};
 use self::temporary_page::TemporaryPage;
-use multiboot2::BootInformation;
-use memory::{PAGE_SIZE, Frame, FrameAllocator};
 
 mod entry;
 mod table;
@@ -46,9 +48,6 @@ impl Page {
     }
 }
 
-pub use self::mapper::Mapper;
-use core::ops::{Deref, DerefMut};
-
 pub struct ActivePageTable {
     mapper: Mapper,
 }
@@ -74,35 +73,38 @@ impl ActivePageTable {
         }
     }
 
-    pub fn with<F>(&mut self, table: &mut InactivePageTable, 
-    	temporary_page: &mut temporary_page::TemporaryPage, f: F)
-	    where F: FnOnce(&mut Mapper)
-	{
-	    use x86_64::instructions::tlb;
-	    use x86_64::registers::control_regs;
+    pub fn with<F>(&mut self,
+                   table: &mut InactivePageTable,
+                   temporary_page: &mut temporary_page::TemporaryPage, // new
+                   f: F)
+        where F: FnOnce(&mut Mapper)
+    {
+        use x86_64::instructions::tlb;
+        use x86_64::registers::control_regs;
 
-	    {
-	        let backup = Frame::containing_address(
-	            control_regs::cr3().0 as usize);
+        {
+            let backup = Frame::containing_address(
+                control_regs::cr3().0 as usize);
 
-	        // map temporary_page to current p4 table
-	        let p4_table = temporary_page.map_table_frame(backup.clone(), self);
+            // map temporary_page to current p4 table
+            let p4_table = temporary_page.map_table_frame(backup.clone(), self);
 
-	        // overwrite recursive mapping
-	        self.p4_mut()[511].set(table.p4_frame.clone(), PRESENT | WRITABLE);
-	        tlb::flush_all();
+            // overwrite recursive mapping
+            self.p4_mut()[511].set(table.p4_frame.clone(), PRESENT | WRITABLE);
+            tlb::flush_all();
 
-	        // execute f in the new context
-	        f(self);
+            // execute f in the new context
+            f(self);
 
-	        // restore recursive mapping to original p4 table
-	        p4_table[511].set(backup, PRESENT | WRITABLE);
-	        tlb::flush_all();
-	    }
+            // restore recursive mapping to original p4 table
+            p4_table[511].set(backup, PRESENT | WRITABLE);
+            tlb::flush_all();
+        }
 
-	    temporary_page.unmap(self);
-	}
+        temporary_page.unmap(self);
+    }
 }
+
 
 pub fn test_paging<A>(allocator: &mut A)
     where A: FrameAllocator
@@ -150,6 +152,8 @@ impl InactivePageTable {
     }
 }
 
+
+
 pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
     where A: FrameAllocator
 {
@@ -167,27 +171,25 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
             .expect("Memory map tag required");
 
         for section in elf_sections_tag.sections() {
-            for section in elf_sections_tag.sections() {
-			    use self::entry::WRITABLE;
+	        use self::entry::WRITABLE;
 
-			    if !section.is_allocated() {
-			        // section is not loaded to memory
-			        continue;
-			    }
-			    assert!(section.start_address() % PAGE_SIZE == 0,
-			            "sections need to be page aligned");
+	        if !section.is_allocated() {
+	            // section is not loaded to memory
+	            continue;
+	        }
+	        assert!(section.start_address() % PAGE_SIZE == 0,
+	                "sections need to be page aligned");
 
-			    println!("mapping section at addr: {:#x}, size: {:#x}",
-			        section.addr, section.size);
+	        println!("mapping section at addr: {:#x}, size: {:#x}",
+	            section.addr, section.size);
 
-			    let flags = WRITABLE; // TODO use real section flags
+	        let flags = WRITABLE; // TODO use real section flags
 
-			    let start_frame = Frame::containing_address(section.start_address());
-			    let end_frame = Frame::containing_address(section.end_address() - 1);
-			    for frame in Frame::range_inclusive(start_frame, end_frame) {
-			        mapper.identity_map(frame, flags, allocator);
-			    }
-			}
-        }
+	        let start_frame = Frame::containing_address(section.start_address());
+	        let end_frame = Frame::containing_address(section.end_address() - 1);
+	        for frame in Frame::range_inclusive(start_frame, end_frame) {
+	            mapper.identity_map(frame, flags, allocator);
+	        }
+	    }
     });
 }
