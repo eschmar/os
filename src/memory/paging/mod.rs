@@ -103,6 +103,22 @@ impl ActivePageTable {
 
         temporary_page.unmap(self);
     }
+
+    pub fn switch(&mut self, new_table: InactivePageTable) -> InactivePageTable {
+	    use x86_64::PhysicalAddress;
+	    use x86_64::registers::control_regs;
+
+	    let old_table = InactivePageTable {
+	        p4_frame: Frame::containing_address(
+	            control_regs::cr3().0 as usize
+	        ),
+	    };
+	    unsafe {
+	        control_regs::cr3_write(PhysicalAddress(
+	            new_table.p4_frame.start_address() as u64));
+	    }
+	    old_table
+	}
 }
 
 
@@ -192,4 +208,7 @@ pub fn remap_the_kernel<A>(allocator: &mut A, boot_info: &BootInformation)
 	        }
 	    }
     });
+
+    let old_table = active_table.switch(new_table);
+	println!("NEW TABLE!!!");
 }
