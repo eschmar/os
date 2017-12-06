@@ -53,6 +53,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
         multiboot_end, memory_map_tag.memory_areas());
 
     enable_nxe_bit();
+    enable_write_protect_bit();
     memory::remap_the_kernel(&mut frame_allocator, boot_info);
 
     frame_allocator.allocate_frame();
@@ -70,6 +71,12 @@ fn enable_nxe_bit() {
         let efer = rdmsr(IA32_EFER);
         wrmsr(IA32_EFER, efer | nxe_bit);
     }
+}
+
+fn enable_write_protect_bit() {
+    use x86_64::registers::control_regs::{cr0, cr0_write, Cr0};
+
+    unsafe { cr0_write(cr0() | Cr0::WRITE_PROTECT) };
 }
 
 #[lang = "eh_personality"] extern fn eh_personality() {}
