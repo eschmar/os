@@ -4,6 +4,7 @@ use self::paging::PhysicalAddress;
 
 mod area_frame_allocator;
 mod paging;
+pub mod heap_allocator;
 
 pub const PAGE_SIZE: usize = 4096;
 
