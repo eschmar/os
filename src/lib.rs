@@ -51,9 +51,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     }
 
     use alloc::boxed::Box;
-    let heap_test = Box::new(42);
-
-    println!("It did not crash!");
+    // let heap_test = Box::new(42);
 
     let mut heap_test = Box::new(42);
     *heap_test -= 15;
@@ -69,6 +67,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) {
     for i in 0..10000 {
         format!("Some String");
     }
+
+    println!("It did not crash!");
 
     loop {}
 }
